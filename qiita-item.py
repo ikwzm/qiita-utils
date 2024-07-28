@@ -172,15 +172,16 @@ class QiitaItem:
             return None
         
 if __name__  == "__main__":
-    parser = argparse.ArgumentParser(description='Qiita Post Itme')
+    parser = argparse.ArgumentParser(description='Qiita Post/Patch/Get Itme')
     parser.add_argument('file_name'      , nargs='?', default=None, help='Markdown File Name')
-    parser.add_argument('-n', '--dry_run', help='Dry Run'           , action='store_true')
-    parser.add_argument('--post'         , help='Post Item'         , action='store_true')
-    parser.add_argument('--patch'        , help='Patch user_id'     , action='store', type=str)
-    parser.add_argument('--get'          , help='Get user_id'       , action='store', type=str)
-    parser.add_argument('-N', '--title'  , help='Qiita Title'       , action='store', type=str)
-    parser.add_argument('-T', '--tags'   , help='Qiita Tags'        , action='append')
-    parser.add_argument('-d', '--debug'  , help='debug mode'        , action='store', type=int , default=0 )
+    parser.add_argument('-n', '--dry_run', help='Dry Run'               , action='store_true')
+    parser.add_argument('--json'         , help='Output result in json' , action='store_true')
+    parser.add_argument('--post'         , help='Post Item'             , action='store_true')
+    parser.add_argument('--patch'        , help='Patch user_id'         , action='store', type=str)
+    parser.add_argument('--get'          , help='Get user_id'           , action='store', type=str)
+    parser.add_argument('-N', '--title'  , help='Qiita Title'           , action='store', type=str)
+    parser.add_argument('-T', '--tags'   , help='Qiita Tags'            , action='append')
+    parser.add_argument('-d', '--debug'  , help='debug mode'            , action='store', type=int , default=0 )
     private_group = parser.add_mutually_exclusive_group()
     private_group.add_argument('--private', dest='private', action='store_const', const=True ,
                                help='Set private=true')
@@ -234,7 +235,10 @@ if __name__  == "__main__":
         item_info  = qiita_item.post(title, tags, body, private)
         if item_info == None:
             sys.exit("Post Error")
-        print(item_info)
+        if args.json == True:
+            print(json.dumps(item_info))
+        else:
+            print(item_info["id"])
     elif (args.patch != None):
         qiita_item = QiitaItem(dry_run=args.dry_run, debug_mode=args.debug)
         qiita_id   = args.patch
@@ -251,14 +255,20 @@ if __name__  == "__main__":
         item_info  = qiita_item.patch(qiita_id, title, tags, body, args.private)
         if item_info == None:
             sys.exit("Patch Error")
-        print(item_info)
+        if args.json == True:
+            print(json.dumps(item_info))
+        else:
+            print("Ok")
     elif (args.get != None):
         qiita_item = QiitaItem(dry_run=args.dry_run, debug_mode=args.debug)
         qiita_id   = args.get
         item_info  = qiita_item.get(qiita_id)
         if item_info == None:
             sys.exit("Get Error")
-        print(item_info)
+        if args.json == True:
+            print(json.dumps(item_info))
+        else:
+            print("Ok")
     else:
         parser.print_help()
 
