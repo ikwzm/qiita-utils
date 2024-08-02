@@ -198,18 +198,19 @@ if __name__  == "__main__":
 
     if args.file_name != None:
         file_name = args.file_name
-        lines     = [line.strip() for line in open(file_name)]
+        lines     = [line for line in open(file_name)]
     else:
         file_name = None
         lines     = []
 
     title = None
     if args.with_title == True:
-        if lines[0].startswith("# "):
-            title = lines[0].removeprefix("# ")
+        first_line = lines[0].strip()
+        if first_line.startswith("# "):
+            title = first_line.removeprefix("# ")
             del lines[:1]
-        elif lines[1].startswith("==="):
-            title = lines[0]
+        elif lines[1].strip().startswith("==="):
+            title = first_line
             del lines[:2]
     if args.title != None:
         title = args.title
@@ -223,7 +224,7 @@ if __name__  == "__main__":
         qiita_item = QiitaItem(dry_run=args.dry_run, debug_mode=args.debug)
         if len(lines) == 0:
             sys.exit("Not Body")
-        body = "\n".join(lines)
+        body = "".join(lines)
         if title == None:
             sys.exit("Not Title")
         if len(tags) == 0:
@@ -251,7 +252,7 @@ if __name__  == "__main__":
         if len(lines) == 0:
             body  = item_info['body']
         else:
-            body  = "\n".join(lines)
+            body  = "".join(lines)
         item_info  = qiita_item.patch(qiita_id, title, tags, body, args.private)
         if item_info == None:
             sys.exit("Patch Error")
