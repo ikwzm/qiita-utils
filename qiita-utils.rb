@@ -89,7 +89,15 @@ class QiitaUtility
   # run_item_command :
   #-------------------------------------------------------------------------------
   def run_item_command(command, item_info)
+    if item_info.has_key?("file_name") == false then
+      puts ("## file_name property not found in item dictionary")
+      return
+    end
     file_name = item_info["file_name"]
+    if File.file?(file_name) == false then
+      puts ("## File not found #{file_name}")
+      return
+    end
     if item_info.has_key?("stage") then
       if item_info["stage"] === "private" then
         command << " --private"
@@ -108,6 +116,14 @@ class QiitaUtility
         command << " --with_title"
       end
     end
+    if item_info.has_key?("title") then
+      title = item_info["title"]
+      d_quarted = title.match(/^\"(.*)\"$/)
+      s_quarted = title.match(/^\'(.*)\'$/)
+      title = d_quarted[1] if d_quarted
+      title = s_quarted[1] if s_quarted
+      command << " --title \"#{title}\""
+    end
     command << " #{file_name}"
 
     if @debug or @verbose or @dry_run then
@@ -116,10 +132,15 @@ class QiitaUtility
     if @dry_run == false then
       result_str  = `#{command}`
       result_info = JSON.load(result_str)
-      ["title", "id", "url", "tags", "created_at", "updated_at"].each do |key|
-        item_info[key] = result_info[key] if result_info.has_key?(key)
+      status_code = $?
+      if status_code == 0 then
+        ["title", "id", "url", "tags", "created_at", "updated_at"].each do |key|
+          item_info[key] = result_info[key] if result_info.has_key?(key)
+        end
+        item_info["status"] = "Success"
+      else
+        item_info["status"] = "Error(#{status_code})"
       end
-      item_info["status"] = "Ok"
     end
   end
   
@@ -128,11 +149,6 @@ class QiitaUtility
   #-------------------------------------------------------------------------------
   def item_post(item_info)
     if item_info.has_key?("id") then
-      return
-    end
-    if item_info.has_key?("file_name") then
-      file_name = item_info["file_name"]
-    else
       return
     end
     if item_info.has_key?("stage") then
@@ -153,11 +169,6 @@ class QiitaUtility
       return
     else
       id = item_info["id"]
-    end
-    if item_info.has_key?("file_name") then
-      file_name = item_info["file_name"]
-    else
-      return
     end
     if item_info.has_key?("stage") then
       if item_info["stage"] === "local" then
@@ -181,11 +192,16 @@ class QiitaUtility
         return
       end
     end
-    if image_info.has_key?("file_name") then
-      file_name = image_info["file_name"]
-    else
+    if image_info.has_key?("file_name") == false then
+      puts ("## file_name property not found in image dictionary")
       return
     end
+    file_name = image_info["file_name"]
+    if File.file?(file_name) == false then
+      puts ("## File not found #{file_name}")
+      return
+    end
+
     command = Pathname.new(__dir__).join("qiita-image-upload.py").to_s
     command << " --json"
     if image_info.has_key?("name") then
@@ -210,12 +226,18 @@ class QiitaUtility
       puts ("## #{command}")
     end
     if @dry_run == false then
+      image_info["status"] = "Running"
       result_str  = `#{command}`
       result_info = JSON.load(result_str)
-      ["name", "type", "url"].each do |key|
-        image_info[key] = result_info[key] if result_info.has_key?(key)
-      end
-      image_info["status"] = "Ok"
+      status_code = $?
+      if status_code == 0 then
+        ["name", "type", "url"].each do |key|
+          image_info[key] = result_info[key] if result_info.has_key?(key)
+        end
+        image_info["status"] = "Success"
+      else
+        image_info["status"] = "Error(#{status_code})"
+      end        
     end
   end
 
@@ -260,7 +282,7 @@ class QiitaUtility
       end
     end
     if @output_file_name != nil then
-      File.open(@@output_file_name, "w") do |file|
+      File.open(@output_file_name, "w") do |file|
         input_info_list.each do |info|
           YAML.dump(info, file)
         end
